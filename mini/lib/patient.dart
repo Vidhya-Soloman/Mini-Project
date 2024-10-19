@@ -63,12 +63,12 @@ class _PatientState extends State<Patient> {
           child: Column(
             children: [
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Name',
-                  errorBorder: const OutlineInputBorder(
+                  errorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
-                  focusedErrorBorder: const OutlineInputBorder(
+                  focusedErrorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -85,12 +85,12 @@ class _PatientState extends State<Patient> {
                 },
               ),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Age',
-                  errorBorder: const OutlineInputBorder(
+                  errorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
-                  focusedErrorBorder: const OutlineInputBorder(
+                  focusedErrorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -109,12 +109,12 @@ class _PatientState extends State<Patient> {
               ),
               DropdownButtonFormField<String>(
                 value: gender,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Gender',
-                  errorBorder: const OutlineInputBorder(
+                  errorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
-                  focusedErrorBorder: const OutlineInputBorder(
+                  focusedErrorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -136,12 +136,12 @@ class _PatientState extends State<Patient> {
                 },
               ),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Height (cm)',
-                  errorBorder: const OutlineInputBorder(
+                  errorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
-                  focusedErrorBorder: const OutlineInputBorder(
+                  focusedErrorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -159,12 +159,12 @@ class _PatientState extends State<Patient> {
                 },
               ),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Weight (kg)',
-                  errorBorder: const OutlineInputBorder(
+                  errorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
-                  focusedErrorBorder: const OutlineInputBorder(
+                  focusedErrorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -182,12 +182,12 @@ class _PatientState extends State<Patient> {
                 },
               ),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Medical Condition',
-                  errorBorder: const OutlineInputBorder(
+                  errorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
-                  focusedErrorBorder: const OutlineInputBorder(
+                  focusedErrorBorder: OutlineInputBorder(
                     borderSide: BorderSide.none,
                   ),
                 ),

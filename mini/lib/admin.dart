@@ -44,7 +44,7 @@ class _AdminState extends State<Admin> {
     } catch (e) {
       print("Error fetching users: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to fetch users")),
+        const SnackBar(content: Text("Failed to fetch users")),
       );
     } finally {
       setState(() {
@@ -60,12 +60,12 @@ class _AdminState extends State<Admin> {
         users.removeWhere((user) => user['id'] == userId);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("User deleted successfully")),
+        const SnackBar(content: Text("User deleted successfully")),
       );
     } catch (e) {
       print("Error deleting user: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to delete user")),
+        const SnackBar(content: Text("Failed to delete user")),
       );
     }
   }
@@ -159,7 +159,7 @@ class _AdminState extends State<Admin> {
                           ),
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 );
               }).toList(),

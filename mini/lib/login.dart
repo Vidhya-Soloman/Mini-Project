@@ -39,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildLoginForm(BuildContext context) {
     return Container(
-      color: Color.fromARGB(255, 198, 240, 161),
+      color: const Color.fromARGB(255, 198, 240, 161),
       width: MediaQuery.of(context).size.width,
       height: MediaQuery.of(context).size.height * 0.70,
       child: Center(
