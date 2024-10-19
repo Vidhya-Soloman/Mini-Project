@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import 'login.dart';
 import 'patient_profile_details.dart'; // Import the details page
+import 'patient_chat_diet.dart'; // Import your dietician chat page
+import 'patient_chat_trainer.dart'; // Import your trainer chat page
 
 class PatientProfile extends StatefulWidget {
   const PatientProfile({super.key});
@@ -55,8 +57,7 @@ class _PatientProfileState extends State<PatientProfile> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Patient Profile"),
-        backgroundColor: Color.fromARGB(
-            255, 70, 206, 227), // Set the desired background color
+        backgroundColor: const Color.fromARGB(255, 70, 206, 227),
         automaticallyImplyLeading: false, // Remove back button
         actions: [
           IconButton(
@@ -72,14 +73,82 @@ class _PatientProfileState extends State<PatientProfile> {
           ),
         ],
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Center(
-              child: Text(
-                'Welcome, ${userName ?? 'Guest'}!',
-                style: TextStyle(fontSize: 24),
+      body: Column(
+        children: [
+          // Welcome message at the top
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            child: isLoading
+                ? const SizedBox.shrink() // Do not display if loading
+                : Text(
+                    'Welcome, ${userName ?? 'Guest'}!',
+                    style: const TextStyle(fontSize: 24),
+                  ),
+          ),
+          // Display loading indicator or an empty space below
+          Expanded(
+            child: isLoading
+                ? Center(child: CircularProgressIndicator())
+                : const SizedBox.shrink(), // Empty space when not loading
+          ),
+        ],
+      ),
+      floatingActionButton: Align(
+        alignment: Alignment.bottomRight, // Move to the right side
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Dietician chat button with text
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end, // Align to the right
+                children: [
+                  const Text("Chat with your Dietician"),
+                  const SizedBox(width: 8), // Spacing between text and button
+                  FloatingActionButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const PatientChatDiet(), // Navigate to the dietician chat page
+                        ),
+                      );
+                    },
+                    child: const Icon(Icons.chat),
+                    backgroundColor: Colors.green,
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 16), // Spacing between the buttons
+              // Trainer chat button with text
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end, // Align to the right
+                children: [
+                  const Text("Chat with your Trainer"),
+                  const SizedBox(width: 8), // Spacing between text and button
+                  FloatingActionButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const PatientChatTrainer(), // Navigate to the trainer chat page
+                        ),
+                      );
+                    },
+                    child: const Icon(Icons
+                        .chat), // You might want to change the icon to differentiate
+                    backgroundColor:
+                        Colors.blue, // Different color for the trainer chat
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

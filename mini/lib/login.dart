@@ -192,7 +192,7 @@ class _LoginPageState extends State<LoginPage> {
               },
               color: const Color.fromARGB(255, 74, 136, 231),
               child: const Text(
-                "Register Now",
+                "Register",
                 style: TextStyle(color: Colors.white, fontSize: 20),
               ),
             ),

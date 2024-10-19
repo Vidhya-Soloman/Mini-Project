@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
-// Assuming you have StudentPage and TeacherPage widgets
-import 'patient.dart'; // Import your PatientPage widget
-import 'dietician.dart'; // Import your TeacherPage widget
+import 'patient.dart';
+import 'dietician.dart';
 
 class HomePage extends StatefulWidget {
-  final String userRole; // 'student' or 'teacher'
+  final String userRole;
 
   const HomePage({super.key, required this.userRole});
 
