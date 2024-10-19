@@ -13,19 +13,16 @@ class Register extends StatefulWidget {
 class _RegisterState extends State<Register> {
   final _formKey = GlobalKey<FormState>();
   final _auth = FirebaseAuth.instance;
-
   bool _showProgress = false;
   bool _isPasswordObscure = true;
   bool _isConfirmPasswordObscure = true;
-
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
-  // Updated roles
   List<String> roles = ['Patient', 'Dietician', 'Trainer'];
-  String selectedRole = 'Select Role'; // Default value
+  String selectedRole = 'Select Role';
 
   @override
   void dispose() {
@@ -38,7 +35,7 @@ class _RegisterState extends State<Register> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 50, 19, 3),
+      backgroundColor: const Color.fromARGB(255, 50, 19, 3),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -93,6 +90,7 @@ class _RegisterState extends State<Register> {
                       const SizedBox(height: 20),
                       _buildActionButtons(),
                       const SizedBox(height: 20),
+                      if (_showProgress) const CircularProgressIndicator(),
                     ],
                   ),
                 ),
@@ -168,9 +166,8 @@ class _RegisterState extends State<Register> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Display the selected role or "Select Role" if none is selected
           Text(
-            selectedRole == 'Select Role' ? 'Select Role' : selectedRole,
+            selectedRole,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -178,9 +175,9 @@ class _RegisterState extends State<Register> {
             ),
           ),
           DropdownButton<String>(
-            dropdownColor: Color.fromARGB(255, 85, 86, 87),
+            dropdownColor: const Color.fromARGB(255, 85, 86, 87),
             value: selectedRole,
-            underline: SizedBox(), // Remove underline
+            underline: const SizedBox(),
             items: [
               ...['Select Role'],
               ...roles
@@ -275,6 +272,7 @@ class _RegisterState extends State<Register> {
       setState(() {
         _showProgress = true;
       });
+
       try {
         UserCredential userCredential =
             await _auth.createUserWithEmailAndPassword(
@@ -287,14 +285,15 @@ class _RegisterState extends State<Register> {
           MaterialPageRoute(builder: (context) => const LoginPage()),
         );
       } catch (e) {
-        print(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration failed: ${e.toString()}')),
+        );
       } finally {
         setState(() {
           _showProgress = false;
         });
       }
     } else {
-      // Handle the case where no role is selected
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a role')),
       );
@@ -304,7 +303,6 @@ class _RegisterState extends State<Register> {
   Future<void> _postDetailsToFirestore(String uid) async {
     FirebaseFirestore firebaseFirestore = FirebaseFirestore.instance;
     CollectionReference users = firebaseFirestore.collection('users');
-
     await users.doc(uid).set({
       'email': emailController.text,
       'role': selectedRole,
