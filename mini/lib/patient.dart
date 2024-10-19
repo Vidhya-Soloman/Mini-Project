@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'login.dart';
+import 'patient_profile.dart'; // Import your PatientProfile widget
 
 class Patient extends StatefulWidget {
   const Patient({super.key});
@@ -240,6 +241,12 @@ class _PatientState extends State<Patient> {
       setState(() {
         gender = 'Select'; // Reset gender to default after saving
       });
+
+      // Navigate to PatientProfile after saving
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const PatientProfile()),
+      );
     } catch (e) {
       print("Error saving patient data: $e");
       ScaffoldMessenger.of(context).showSnackBar(

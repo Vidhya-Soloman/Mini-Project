@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dietician.dart';
 import 'trainer.dart';
 import 'patient.dart';
+import 'patient_profile.dart'; // Import your PatientProfile widget
 import 'register.dart';
 import 'admin.dart'; // Import your Admin widget here
 
@@ -209,7 +210,7 @@ class _LoginPageState extends State<LoginPage> {
           email: email,
           password: password,
         );
-        routeUser(email, password);
+        routeUser(email);
       } on FirebaseAuthException catch (e) {
         setState(() {
           isLoading = false;
@@ -223,8 +224,8 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void routeUser(String email, String password) async {
-    if (email == 'admin@gmail.com' && password == 'admin1') {
+  void routeUser(String email) async {
+    if (email == 'admin@gmail.com') {
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => const Admin()));
       return;
@@ -243,8 +244,23 @@ class _LoginPageState extends State<LoginPage> {
           Navigator.pushReplacement(context,
               MaterialPageRoute(builder: (context) => const Dietician()));
         } else if (role == "Patient") {
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (context) => const Patient()));
+          // Check if the email exists in the patients collection
+          var patientSnapshot = await FirebaseFirestore.instance
+              .collection('patients')
+              .where('email', isEqualTo: email)
+              .get();
+
+          if (patientSnapshot.docs.isNotEmpty) {
+            // Navigate to PatientProfile if email is found
+            Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const PatientProfile()));
+          } else {
+            // Navigate to Patient if email is not found
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (context) => const Patient()));
+          }
         } else if (role == "Trainer") {
           Navigator.pushReplacement(context,
               MaterialPageRoute(builder: (context) => const Trainer()));
