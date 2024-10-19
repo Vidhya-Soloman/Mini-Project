@@ -55,6 +55,8 @@ class _PatientProfileState extends State<PatientProfile> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Patient Profile"),
+        backgroundColor: Color.fromARGB(
+            255, 70, 206, 227), // Set the desired background color
         automaticallyImplyLeading: false, // Remove back button
         actions: [
           IconButton(
@@ -68,12 +70,6 @@ class _PatientProfileState extends State<PatientProfile> {
             },
             icon: const Icon(Icons.person),
           ),
-          IconButton(
-            onPressed: () {
-              logout(context);
-            },
-            icon: const Icon(Icons.logout),
-          )
         ],
       ),
       body: isLoading
