@@ -1,11 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import 'login.dart';
-import 'patient_profile_details.dart'; // Import the details page
-import 'patient_chat_diet.dart'; // Import your dietician chat page
-import 'patient_chat_trainer.dart'; // Import your trainer chat page
+import 'patient_profile_details.dart';
+import 'patient_chat_diet.dart';
+import 'patient_chat_trainer.dart';
 
 class PatientProfile extends StatefulWidget {
   const PatientProfile({super.key});
@@ -17,6 +16,7 @@ class PatientProfile extends StatefulWidget {
 class _PatientProfileState extends State<PatientProfile> {
   String? userName;
   bool isLoading = true;
+  int unreadMessagesCount = 0; // For counting unread messages
 
   @override
   void initState() {
@@ -35,20 +35,57 @@ class _PatientProfileState extends State<PatientProfile> {
 
       if (snapshot.docs.isNotEmpty) {
         setState(() {
-          userName = snapshot
-              .docs.first['name']; // Adjust based on your Firestore structure
+          userName = snapshot.docs.first['name'];
           isLoading = false;
         });
+        _fetchUnreadMessagesCount(
+            snapshot.docs.first.id); // Fetch unread messages
       } else {
         setState(() {
-          userName = "User not found"; // Handle case where user isn't found
+          userName = "User not found";
           isLoading = false;
         });
       }
     } else {
       setState(() {
-        isLoading = false; // Handle case where there's no logged-in user
+        isLoading = false;
       });
+    }
+  }
+
+  Future<void> _fetchUnreadMessagesCount(String patientId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(patientId)
+        .collection('messages')
+        .where('isRead', isEqualTo: false) // Count unread messages
+        .get();
+
+    setState(() {
+      unreadMessagesCount = snapshot.docs.length; // Update the count
+    });
+  }
+
+  void _startChatWithDietician() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final email = user.email;
+      final snapshot = await FirebaseFirestore.instance
+          .collection('patients')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final patientId = snapshot.docs.first.id;
+
+        // Navigate to PatientChatDiet instead of DieticianChatPatient
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PatientChatDiet(patientId: patientId),
+          ),
+        );
+      }
     }
   }
 
@@ -58,7 +95,7 @@ class _PatientProfileState extends State<PatientProfile> {
       appBar: AppBar(
         title: const Text("Patient Profile"),
         backgroundColor: const Color.fromARGB(255, 70, 206, 227),
-        automaticallyImplyLeading: false, // Remove back button
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             onPressed: () {
@@ -75,73 +112,81 @@ class _PatientProfileState extends State<PatientProfile> {
       ),
       body: Column(
         children: [
-          // Welcome message at the top
           Container(
             padding: const EdgeInsets.all(16.0),
             child: isLoading
-                ? const SizedBox.shrink() // Do not display if loading
+                ? const SizedBox.shrink()
                 : Text(
                     'Welcome, ${userName ?? 'Guest'}!',
                     style: const TextStyle(fontSize: 24),
                   ),
           ),
-          // Display loading indicator or an empty space below
           Expanded(
             child: isLoading
                 ? Center(child: CircularProgressIndicator())
-                : const SizedBox.shrink(), // Empty space when not loading
+                : const SizedBox.shrink(),
           ),
         ],
       ),
       floatingActionButton: Align(
-        alignment: Alignment.bottomRight, // Move to the right side
+        alignment: Alignment.bottomRight,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Dietician chat button with text
               Row(
-                mainAxisAlignment: MainAxisAlignment.end, // Align to the right
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   const Text("Chat with your Dietician"),
-                  const SizedBox(width: 8), // Spacing between text and button
+                  const SizedBox(width: 8),
+                  Stack(
+                    children: [
+                      FloatingActionButton(
+                        onPressed: _startChatWithDietician,
+                        child: const Icon(Icons.chat),
+                        backgroundColor: Colors.green,
+                      ),
+                      if (unreadMessagesCount >
+                          0) // Show badge if there are unread messages
+                        Positioned(
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              unreadMessagesCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Text("Chat with your Trainer"),
+                  const SizedBox(width: 8),
                   FloatingActionButton(
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              const PatientChatDiet(), // Navigate to the dietician chat page
+                          builder: (context) => const PatientChatTrainer(),
                         ),
                       );
                     },
                     child: const Icon(Icons.chat),
-                    backgroundColor: Colors.green,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16), // Spacing between the buttons
-              // Trainer chat button with text
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end, // Align to the right
-                children: [
-                  const Text("Chat with your Trainer"),
-                  const SizedBox(width: 8), // Spacing between text and button
-                  FloatingActionButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const PatientChatTrainer(), // Navigate to the trainer chat page
-                        ),
-                      );
-                    },
-                    child: const Icon(Icons
-                        .chat), // You might want to change the icon to differentiate
-                    backgroundColor:
-                        Colors.blue, // Different color for the trainer chat
+                    backgroundColor: Colors.blue,
                   ),
                 ],
               ),

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class PatientChatDiet extends StatefulWidget {
+class DieticianChatPatient extends StatefulWidget {
   final String patientId;
 
-  const PatientChatDiet({Key? key, required this.patientId}) : super(key: key);
+  const DieticianChatPatient({Key? key, required this.patientId})
+      : super(key: key);
 
   @override
-  _PatientChatDietState createState() => _PatientChatDietState();
+  _DieticianChatPatientState createState() => _DieticianChatPatientState();
 }
 
-class _PatientChatDietState extends State<PatientChatDiet> {
+class _DieticianChatPatientState extends State<DieticianChatPatient> {
   final TextEditingController _messageController = TextEditingController();
   List<Map<String, dynamic>> messages = [];
 
@@ -45,7 +46,7 @@ class _PatientChatDietState extends State<PatientChatDiet> {
           .collection('messages')
           .add({
         'text': message,
-        'sender': 'patient', // Sender is the patient
+        'sender': 'dietician', // Sender is the dietician
         'timestamp': FieldValue.serverTimestamp(),
       });
 
@@ -103,7 +104,7 @@ class _PatientChatDietState extends State<PatientChatDiet> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Chat with Dietician"),
+        title: const Text("Chat with Patient"),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
@@ -118,7 +119,7 @@ class _PatientChatDietState extends State<PatientChatDiet> {
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final message = messages[index];
-                bool isSender = message['sender'] == 'patient';
+                bool isSender = message['sender'] == 'dietician';
 
                 return Align(
                   alignment:
@@ -128,7 +129,7 @@ class _PatientChatDietState extends State<PatientChatDiet> {
                         vertical: 4.0, horizontal: 8.0),
                     padding: const EdgeInsets.all(10.0),
                     decoration: BoxDecoration(
-                      color: isSender ? Colors.blue[300] : Colors.grey[300],
+                      color: isSender ? Colors.green[300] : Colors.grey[300],
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                     child: Text(
