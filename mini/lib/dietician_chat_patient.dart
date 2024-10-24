@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart'; // Import intl package for time formatting
 
 class DieticianChatPatient extends StatefulWidget {
   final String patientId;
 
-  const DieticianChatPatient({Key? key, required this.patientId})
-      : super(key: key);
+  const DieticianChatPatient({super.key, required this.patientId});
 
   @override
   _DieticianChatPatientState createState() => _DieticianChatPatientState();
@@ -31,9 +31,7 @@ class _DieticianChatPatientState extends State<DieticianChatPatient> {
         .snapshots()
         .listen((snapshot) {
       setState(() {
-        messages = snapshot.docs
-            .map((doc) => doc.data() as Map<String, dynamic>)
-            .toList();
+        messages = snapshot.docs.map((doc) => doc.data()).toList();
       });
     });
   }
@@ -100,6 +98,11 @@ class _DieticianChatPatientState extends State<DieticianChatPatient> {
     }
   }
 
+  String _formatTime(Timestamp timestamp) {
+    // Format the timestamp to show only the time
+    return DateFormat('HH:mm').format(timestamp.toDate());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,23 +124,38 @@ class _DieticianChatPatientState extends State<DieticianChatPatient> {
                 final message = messages[index];
                 bool isSender = message['sender'] == 'dietician';
 
-                return Align(
-                  alignment:
-                      isSender ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(
-                        vertical: 4.0, horizontal: 8.0),
-                    padding: const EdgeInsets.all(10.0),
-                    decoration: BoxDecoration(
-                      color: isSender ? Colors.green[300] : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    child: Text(
-                      message['text'],
-                      style: TextStyle(
-                        color: isSender ? Colors.white : Colors.black,
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 4.0, horizontal: 8.0),
+                  child: Column(
+                    crossAxisAlignment: isSender
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10.0),
+                        decoration: BoxDecoration(
+                          color:
+                              isSender ? Colors.green[300] : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Text(
+                          message['text'],
+                          style: TextStyle(
+                            color: isSender ? Colors.white : Colors.black,
+                          ),
+                        ),
                       ),
-                    ),
+                      if (message['timestamp'] != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2.0),
+                          child: Text(
+                            _formatTime(message['timestamp']),
+                            style: const TextStyle(
+                                fontSize: 10, color: Colors.black54),
+                          ),
+                        ),
+                    ],
                   ),
                 );
               },
@@ -150,7 +168,7 @@ class _DieticianChatPatientState extends State<DieticianChatPatient> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Type a message...',
                       border: OutlineInputBorder(),
                     ),

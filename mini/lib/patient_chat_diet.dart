@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class PatientChatDiet extends StatefulWidget {
   final String patientId;
 
-  const PatientChatDiet({Key? key, required this.patientId}) : super(key: key);
+  const PatientChatDiet({super.key, required this.patientId});
 
   @override
   _PatientChatDietState createState() => _PatientChatDietState();
@@ -21,7 +21,6 @@ class _PatientChatDietState extends State<PatientChatDiet> {
   }
 
   Future<void> _fetchMessages() async {
-    // Listen to messages for the specific patient ID
     FirebaseFirestore.instance
         .collection('chats')
         .doc(widget.patientId)
@@ -30,9 +29,7 @@ class _PatientChatDietState extends State<PatientChatDiet> {
         .snapshots()
         .listen((snapshot) {
       setState(() {
-        messages = snapshot.docs
-            .map((doc) => doc.data() as Map<String, dynamic>)
-            .toList();
+        messages = snapshot.docs.map((doc) => doc.data()).toList();
       });
     });
   }
@@ -54,7 +51,6 @@ class _PatientChatDietState extends State<PatientChatDiet> {
   }
 
   Future<void> _deleteChat() async {
-    // Confirm deletion
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -74,7 +70,6 @@ class _PatientChatDietState extends State<PatientChatDiet> {
     );
 
     if (shouldDelete == true) {
-      // Delete all messages
       final messagesRef = FirebaseFirestore.instance
           .collection('chats')
           .doc(widget.patientId)
@@ -88,7 +83,6 @@ class _PatientChatDietState extends State<PatientChatDiet> {
 
       await batch.commit();
 
-      // Optionally, clear the local messages list
       setState(() {
         messages.clear();
       });
@@ -99,6 +93,11 @@ class _PatientChatDietState extends State<PatientChatDiet> {
     }
   }
 
+  String formatTimestamp(Timestamp timestamp) {
+    DateTime date = timestamp.toDate();
+    return "${date.hour}:${date.minute < 10 ? '0' : ''}${date.minute}";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,7 +106,7 @@ class _PatientChatDietState extends State<PatientChatDiet> {
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
-            onPressed: _deleteChat, // Call delete function
+            onPressed: _deleteChat,
           ),
         ],
       ),
@@ -123,18 +122,36 @@ class _PatientChatDietState extends State<PatientChatDiet> {
                 return Align(
                   alignment:
                       isSender ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(
-                        vertical: 4.0, horizontal: 8.0),
-                    padding: const EdgeInsets.all(10.0),
-                    decoration: BoxDecoration(
-                      color: isSender ? Colors.blue[300] : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    child: Text(
-                      message['text'],
-                      style: TextStyle(
-                        color: isSender ? Colors.white : Colors.black,
+                  child: Hero(
+                    tag:
+                        'messageHero_${widget.patientId}_${message['text']}_$index', // Unique tag for each message
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 4.0, horizontal: 8.0),
+                      padding: const EdgeInsets.all(10.0),
+                      decoration: BoxDecoration(
+                        color: isSender ? Colors.blue[300] : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            message['text'],
+                            style: TextStyle(
+                              color: isSender ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          if (message['timestamp'] != null)
+                            Text(
+                              formatTimestamp(message['timestamp']),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color:
+                                    isSender ? Colors.white70 : Colors.black54,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -149,7 +166,7 @@ class _PatientChatDietState extends State<PatientChatDiet> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Type a message...',
                       border: OutlineInputBorder(),
                     ),

@@ -81,28 +81,6 @@ class _DieticianDetailsState extends State<DieticianDetails> {
     );
   }
 
-  void _startConversation() {
-    // Find the first selected patient's ID
-    int selectedIndex = checkedPatients.indexOf(true);
-    if (selectedIndex != -1) {
-      String patientId = patients[selectedIndex]['id'];
-
-      // Navigate to the chat page with the selected patient ID
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DieticianChatPatient(
-              patientId: patientId), // Pass single patient ID
-        ),
-      );
-    } else {
-      // Optionally show an alert if no patients are selected
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please select a patient to chat.')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -159,23 +137,25 @@ class _DieticianDetailsState extends State<DieticianDetails> {
                             subtitle: Text(
                               'BMI: ${patients[index]['bmi']}\nMedical Condition: ${patients[index]['medicalCondition']}',
                             ),
-                            trailing: Checkbox(
-                              value: checkedPatients[index],
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  checkedPatients[index] =
-                                      value ?? false; // Update checkbox state
-                                });
+                            trailing: IconButton(
+                              icon: const Icon(Icons.chat), // Chat icon
+                              onPressed: () {
+                                // Navigate to chat page for the selected patient
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DieticianChatPatient(
+                                      patientId: patients[index][
+                                          'id'], // Pass the selected patient's ID
+                                    ),
+                                  ),
+                                );
                               },
                             ),
                           ),
                         );
                       },
                     ),
-                  ),
-                  ElevatedButton(
-                    onPressed: _startConversation,
-                    child: const Text("Start Conversation"),
                   ),
                 ],
               ),

@@ -43,18 +43,18 @@ class DieticianProfile extends StatelessWidget {
                 const SizedBox(height: 20), // Add some spacing
                 ElevatedButton(
                   onPressed: () => _signOut(context),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 8.0, horizontal: 16.0), // Smaller padding
+                    backgroundColor: const Color.fromARGB(
+                        255, 235, 96, 96), // Change color as needed
+                  ),
                   child: const Text(
                     "Sign Out",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18, // Increased text size
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 8.0, horizontal: 16.0), // Smaller padding
-                    backgroundColor: Color.fromARGB(
-                        255, 235, 96, 96), // Change color as needed
                   ),
                 ),
               ],

@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'login.dart';
+import 'login.dart'; // Import your login page
+import 'patient_profile.dart';
 
 class PatientProfileDetails extends StatefulWidget {
   const PatientProfileDetails({super.key});
@@ -33,27 +34,34 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final email = user.email;
-      final snapshot = await FirebaseFirestore.instance
-          .collection('patients')
-          .where('email', isEqualTo: email)
-          .get();
+      try {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('patients')
+            .where('email', isEqualTo: email)
+            .get();
 
-      if (snapshot.docs.isNotEmpty) {
-        userId = snapshot.docs.first.id; // Store the userId
-        setState(() {
-          patientData = snapshot.docs.first.data();
-          isLoading = false;
+        if (snapshot.docs.isNotEmpty) {
+          userId = snapshot.docs.first.id;
+          setState(() {
+            patientData = snapshot.docs.first.data();
+            isLoading = false;
 
-          // Populate controllers with current values
-          ageController.text = patientData!['age'].toString();
-          weightController.text = patientData!['weight'].toString();
-          heightController.text = patientData!['height'].toString();
-          medicalConditionController.text = patientData!['medicalCondition'] ??
-              ''; // Populate medical condition
-        });
-      } else {
+            // Populate controllers with current values
+            ageController.text = patientData!['age'].toString();
+            weightController.text = patientData!['weight'].toString();
+            heightController.text = patientData!['height'].toString();
+            medicalConditionController.text =
+                patientData!['medicalCondition'] ?? '';
+          });
+        } else {
+          setState(() {
+            patientData = null;
+            isLoading = false;
+          });
+        }
+      } catch (e) {
+        print("Error fetching patient details: $e");
         setState(() {
-          patientData = null;
           isLoading = false;
         });
       }
@@ -74,10 +82,9 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
             double.tryParse(heightController.text) ?? patientData!['height'],
         'medicalCondition': medicalConditionController.text.isNotEmpty
             ? medicalConditionController.text
-            : patientData!['medicalCondition'], // Include medical condition
+            : patientData!['medicalCondition'],
       }, SetOptions(merge: true));
 
-      // Update local patientData for UI refresh
       setState(() {
         patientData!['age'] = int.tryParse(ageController.text);
         patientData!['weight'] = double.tryParse(weightController.text);
@@ -86,7 +93,7 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
             medicalConditionController.text.isNotEmpty
                 ? medicalConditionController.text
                 : patientData!['medicalCondition'];
-        isEditing = false; // Exit editing mode
+        isEditing = false;
       });
     }
   }
@@ -96,12 +103,21 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("My Profile"),
-        backgroundColor: Color.fromARGB(255, 228, 218, 234),
+        backgroundColor: const Color.fromARGB(255, 228, 218, 234),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const PatientProfile()),
+            );
+          },
+        ),
       ),
       body: Container(
-        color: Color.fromARGB(255, 190, 214, 237),
+        color: const Color.fromARGB(255, 190, 214, 237),
         child: isLoading
-            ? Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())
             : patientData != null
                 ? Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -122,20 +138,18 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
                                   "Weight", weightController, isEditing),
                               _buildEditableCard(
                                   "Height", heightController, isEditing),
-                              _buildEditableCard(
-                                  "Medical Condition",
-                                  medicalConditionController,
-                                  isEditing), // Editable medical condition
-                              SizedBox(height: 20),
+                              _buildEditableCard("Medical Condition",
+                                  medicalConditionController, isEditing),
+                              const SizedBox(height: 20),
                               if (patientData?['weight'] != null &&
                                   patientData?['height'] != null) ...[
                                 Text(
                                   "BMI: ${calculateBMI(patientData!['weight'], patientData!['height'])?.toStringAsFixed(2) ?? 'N/A'}",
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold),
                                 ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 Text(
                                   "Health Status: ${getHealthStatus(calculateBMI(patientData!['weight'], patientData!['height'])!)}",
                                   style: TextStyle(
@@ -145,12 +159,12 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
                                                 patientData!['weight'],
                                                 patientData!['height'])!) ==
                                             "Healthy weight"
-                                        ? Color.fromARGB(255, 43, 149, 46)
+                                        ? const Color.fromARGB(255, 43, 149, 46)
                                         : Colors.red,
                                   ),
                                 ),
                               ],
-                              SizedBox(height: 20),
+                              const SizedBox(height: 20),
                               Center(
                                 child: ElevatedButton(
                                   onPressed: () {
@@ -158,34 +172,60 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
                                       updatePatientDetails();
                                     } else {
                                       setState(() {
-                                        isEditing = true; // Enter editing mode
-                                        medicalConditionController
-                                            .text = patientData![
-                                                'medicalCondition'] ??
-                                            ''; // Populate medical condition
+                                        isEditing = true;
+                                        medicalConditionController.text =
+                                            patientData!['medicalCondition'] ??
+                                                '';
                                       });
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
-                                        Color.fromARGB(255, 70, 206, 227),
+                                        const Color.fromARGB(255, 70, 206, 227),
                                     foregroundColor: Colors.white,
                                   ),
                                   child: Text(isEditing ? "Save" : "Edit",
-                                      style: TextStyle(fontSize: 18)),
+                                      style: const TextStyle(fontSize: 18)),
                                 ),
                               ),
-                              SizedBox(height: 20),
+                              const SizedBox(height: 20),
                               Center(
                                 child: ElevatedButton(
                                   onPressed: () async {
-                                    await FirebaseAuth.instance.signOut();
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              const LoginPage()),
+                                    bool? confirm = await showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: const Text("Confirm Sign Out"),
+                                          content: const Text(
+                                              "Are you sure you want to sign out?"),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context)
+                                                      .pop(false),
+                                              child: const Text("Cancel"),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context)
+                                                      .pop(true),
+                                              child: const Text("Sign Out"),
+                                            ),
+                                          ],
+                                        );
+                                      },
                                     );
+
+                                    if (confirm == true) {
+                                      await FirebaseAuth.instance.signOut();
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const LoginPage()), // Navigate to Login page
+                                      );
+                                    }
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.red,
@@ -201,9 +241,10 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
                       ],
                     ),
                   )
-                : Center(
+                : const Center(
                     child: Text("No patient details found",
-                        style: TextStyle(fontSize: 20))),
+                        style: TextStyle(fontSize: 20)),
+                  ),
       ),
     );
   }
@@ -220,8 +261,9 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Flexible(child: Text(value, style: TextStyle(fontSize: 18))),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Flexible(child: Text(value, style: const TextStyle(fontSize: 18))),
           ],
         ),
       ),
@@ -241,7 +283,8 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             isEditing
                 ? Expanded(
                     child: TextFormField(
@@ -250,7 +293,7 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
                           ? TextInputType.text
                           : TextInputType.number,
                       decoration: InputDecoration(
-                          hintText: label, border: OutlineInputBorder()),
+                          hintText: label, border: const OutlineInputBorder()),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter a valid $label';
@@ -259,7 +302,7 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
                       },
                     ),
                   )
-                : Text(controller.text, style: TextStyle(fontSize: 18)),
+                : Text(controller.text, style: const TextStyle(fontSize: 18)),
           ],
         ),
       ),
@@ -267,7 +310,7 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
   }
 
   double? calculateBMI(double weight, double height) {
-    return weight / ((height / 100) * (height / 100)); // height in meters
+    return weight / ((height / 100) * (height / 100));
   }
 
   String getHealthStatus(double bmi) {

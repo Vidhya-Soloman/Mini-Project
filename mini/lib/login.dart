@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dietician.dart';
 import 'dietician_details.dart'; // Import your DieticianDetails widget
 import 'trainer.dart';
+import 'trainer_details.dart'; // Import TrainerDetails widget
 import 'patient.dart';
 import 'patient_profile.dart';
 import 'register.dart';
@@ -244,44 +245,53 @@ class _LoginPageState extends State<LoginPage> {
         String role = userDocument.get('role');
 
         if (role == "Dietician") {
-          // Check if the dietician email exists in the dieticians collection
           var dieticianSnapshot = await FirebaseFirestore.instance
               .collection('dieticians')
               .where('email', isEqualTo: email)
               .get();
 
           if (dieticianSnapshot.docs.isNotEmpty) {
-            // Navigate to DieticianDetails if the email is found
             Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                     builder: (context) => const DieticianDetails()));
           } else {
-            // Navigate to Dietician if the email is not found
             Navigator.pushReplacement(context,
                 MaterialPageRoute(builder: (context) => const Dietician()));
           }
         } else if (role == "Patient") {
-          // Check if the email exists in the patients collection
           var patientSnapshot = await FirebaseFirestore.instance
               .collection('patients')
               .where('email', isEqualTo: email)
               .get();
 
           if (patientSnapshot.docs.isNotEmpty) {
-            // Navigate to PatientProfile if email is found
             Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                     builder: (context) => const PatientProfile()));
           } else {
-            // Navigate to Patient if email is not found
             Navigator.pushReplacement(context,
                 MaterialPageRoute(builder: (context) => const Patient()));
           }
         } else if (role == "Trainer") {
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (context) => const Trainer()));
+          // Check if the trainer exists in the trainers collection
+          var trainerSnapshot = await FirebaseFirestore.instance
+              .collection('trainers')
+              .where('email', isEqualTo: email)
+              .get();
+
+          if (trainerSnapshot.docs.isNotEmpty) {
+            // Navigate to TrainerDetails if the email is found
+            Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const TrainerDetails()));
+          } else {
+            // Navigate to Trainer if the email is not found
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (context) => const Trainer()));
+          }
         }
       }
     }

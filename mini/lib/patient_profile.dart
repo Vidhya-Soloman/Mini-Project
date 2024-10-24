@@ -123,7 +123,7 @@ class _PatientProfileState extends State<PatientProfile> {
           ),
           Expanded(
             child: isLoading
-                ? Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator())
                 : const SizedBox.shrink(),
           ),
         ],
@@ -144,8 +144,8 @@ class _PatientProfileState extends State<PatientProfile> {
                     children: [
                       FloatingActionButton(
                         onPressed: _startChatWithDietician,
-                        child: const Icon(Icons.chat),
                         backgroundColor: Colors.green,
+                        child: const Icon(Icons.chat),
                       ),
                       if (unreadMessagesCount >
                           0) // Show badge if there are unread messages
@@ -153,7 +153,7 @@ class _PatientProfileState extends State<PatientProfile> {
                           right: 0,
                           child: Container(
                             padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: Colors.red,
                               shape: BoxShape.circle,
                             ),
@@ -185,8 +185,8 @@ class _PatientProfileState extends State<PatientProfile> {
                         ),
                       );
                     },
-                    child: const Icon(Icons.chat),
                     backgroundColor: Colors.blue,
+                    child: const Icon(Icons.chat),
                   ),
                 ],
               ),

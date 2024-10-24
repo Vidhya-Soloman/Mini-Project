@@ -213,8 +213,8 @@ class _DieticianState extends State<Dietician> {
 
                     // Show a snackbar to confirm submission
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
+                      const SnackBar(
+                        content: Text(
                           'Details submitted successfully!',
                         ),
                       ),
