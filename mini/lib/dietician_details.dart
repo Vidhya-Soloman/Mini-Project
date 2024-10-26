@@ -2,8 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login.dart';
-import 'dietician_profile.dart'; // Import the profile page
-import 'dietician_chat_patient.dart'; // Import the chat page
+import 'dietician_profile.dart';
+import 'dietician_chat_patient.dart';
+import 'assign_diet.dart';
 
 class DieticianDetails extends StatefulWidget {
   const DieticianDetails({super.key});
@@ -13,64 +14,74 @@ class DieticianDetails extends StatefulWidget {
 }
 
 class _DieticianDetailsState extends State<DieticianDetails> {
-  Map<String, dynamic>? dieticianDetails; // Variable to store dietician details
-  bool isLoading = true; // Loading state
+  Map<String, dynamic>? dieticianDetails;
+  bool isLoading = true;
+  Map<String, DateTime> assignedPatients = {}; // Track assigned diets with time
 
   @override
   void initState() {
     super.initState();
-    _fetchDieticianDetails(); // Fetch the dietician's details on init
+    _fetchDieticianDetails();
   }
 
   Future<void> _fetchDieticianDetails() async {
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      // Fetch dietician details from Firestore using the user's email
       var dieticianSnapshot = await FirebaseFirestore.instance
           .collection('dieticians')
-          .where('email', isEqualTo: user.email) // Query by email
+          .where('email', isEqualTo: user.email)
           .get();
 
       if (dieticianSnapshot.docs.isNotEmpty) {
         setState(() {
-          dieticianDetails =
-              dieticianSnapshot.docs.first.data(); // Fetching the details
+          dieticianDetails = dieticianSnapshot.docs.first.data();
         });
       }
     }
     setState(() {
-      isLoading = false; // Update loading state
+      isLoading = false;
     });
   }
 
   Future<void> _logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut(); // Sign out the user
+    await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => const LoginPage(), // Navigate back to login page
-      ),
+      MaterialPageRoute(builder: (context) => const LoginPage()),
     );
+  }
+
+  // Callback function to update assigned diet status
+  void _onDietAssigned(String patientId) {
+    setState(() {
+      assignedPatients[patientId] = DateTime.now(); // Store the current time
+    });
+  }
+
+  bool _isDietAssignedRecently(String patientId) {
+    if (!assignedPatients.containsKey(patientId)) return false;
+
+    DateTime assignmentTime = assignedPatients[patientId]!;
+    return DateTime.now().difference(assignmentTime).inHours <
+        24; // Check if within 24 hours
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(
-            255, 100, 150, 250), // Change to your desired color
+        backgroundColor: const Color.fromARGB(255, 100, 150, 250),
         title: const Text("Dietician"),
-        automaticallyImplyLeading: false, // Remove back icon
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.person), // Profile icon
+            icon: const Icon(Icons.person),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      const DieticianProfile(), // Navigate to profile page
+                  builder: (context) => const DieticianProfile(),
                 ),
               );
             },
@@ -78,27 +89,24 @@ class _DieticianDetailsState extends State<DieticianDetails> {
         ],
       ),
       body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(), // Show loading indicator
-            )
+          ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start, // Align to the left
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     dieticianDetails?['name'] != null
-                        ? "Welcome, ${dieticianDetails!['name']}!" // Personalized welcome message
-                        : "Welcome!", // Default message if name is not found
+                        ? "Welcome, ${dieticianDetails!['name']}!"
+                        : "Welcome!",
                     style: const TextStyle(fontSize: 24),
                   ),
-                  const SizedBox(height: 20), // Add some spacing
+                  const SizedBox(height: 20),
                   const Text(
                     "Patients:",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 10), // Add some spacing
+                  const SizedBox(height: 10),
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
@@ -108,33 +116,31 @@ class _DieticianDetailsState extends State<DieticianDetails> {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           return const Center(
-                              child:
-                                  CircularProgressIndicator()); // Show loading indicator while waiting
+                              child: CircularProgressIndicator());
                         }
                         if (snapshot.hasError) {
                           return Center(
-                              child: Text(
-                                  'Error: ${snapshot.error}')); // Display error
+                              child: Text('Error: ${snapshot.error}'));
                         }
 
-                        // If data exists
                         final patients = snapshot.data!.docs.map((doc) {
                           return {
                             'id': doc.id,
-                            'name':
-                                doc['name'], // Assuming there's a 'name' field
-                            'medicalCondition': doc[
-                                'medicalCondition'], // Assuming there's a 'medicalCondition' field
-                            'age': doc['age'], // Fetching the 'age' field
-                            'bmi': doc['bmi'], // Fetching the 'bmi' field
-                            'gender':
-                                doc['gender'], // Fetching the 'gender' field
+                            'name': doc['name'],
+                            'medicalCondition': doc['medicalCondition'],
+                            'age': doc['age'],
+                            'bmi': doc['bmi'],
+                            'gender': doc['gender'],
                           };
                         }).toList();
 
                         return ListView.builder(
                           itemCount: patients.length,
                           itemBuilder: (context, index) {
+                            String patientId = patients[index]['id'];
+                            bool isDietAssigned =
+                                _isDietAssignedRecently(patientId);
+
                             return Card(
                               margin: const EdgeInsets.symmetric(vertical: 5),
                               child: ListTile(
@@ -151,21 +157,45 @@ class _DieticianDetailsState extends State<DieticianDetails> {
                                         'Gender: ${patients[index]['gender'] ?? 'N/A'}'),
                                   ],
                                 ),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.chat), // Chat icon
-                                  onPressed: () {
-                                    // Navigate to chat page for the selected patient
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            DieticianChatPatient(
-                                          patientId: patients[index][
-                                              'id'], // Pass the selected patient's ID
-                                        ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.chat),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                DieticianChatPatient(
+                                              patientId: patientId,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.restaurant_menu,
+                                        color: isDietAssigned
+                                            ? Colors
+                                                .green // Change color if diet is assigned
+                                            : null, // Default color
                                       ),
-                                    );
-                                  },
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => AssignDiet(
+                                                patientId: patientId,
+                                                onDietAssigned: () =>
+                                                    _onDietAssigned(
+                                                        patientId)), // Pass the callback
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
                             );

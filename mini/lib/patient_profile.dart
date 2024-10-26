@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-//import 'login.dart';
 import 'patient_profile_details.dart';
 import 'patient_chat_diet.dart';
 import 'patient_chat_trainer.dart';
@@ -17,6 +16,8 @@ class _PatientProfileState extends State<PatientProfile> {
   String? userName;
   bool isLoading = true;
   int unreadMessagesCount = 0; // For counting unread messages
+  Map<String, dynamic>? assignedDiet;
+  DateTime? dietAssignedAt;
 
   @override
   void initState() {
@@ -38,8 +39,8 @@ class _PatientProfileState extends State<PatientProfile> {
           userName = snapshot.docs.first['name'];
           isLoading = false;
         });
-        _fetchUnreadMessagesCount(
-            snapshot.docs.first.id); // Fetch unread messages
+        _fetchUnreadMessagesCount(snapshot.docs.first.id);
+        _fetchAssignedDiet(snapshot.docs.first.id);
       } else {
         setState(() {
           userName = "User not found";
@@ -65,6 +66,36 @@ class _PatientProfileState extends State<PatientProfile> {
     });
   }
 
+  Future<void> _fetchAssignedDiet(String patientId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('patients')
+        .doc(patientId)
+        .get();
+
+    if (snapshot.exists) {
+      final dietRef = snapshot.data()?['dietRef'] as String?;
+
+      if (dietRef != null) {
+        final dietSnapshot = await FirebaseFirestore.instance
+            .collection('food')
+            .doc(dietRef)
+            .get();
+
+        if (dietSnapshot.exists) {
+          setState(() {
+            assignedDiet = dietSnapshot.data();
+            dietAssignedAt = snapshot.data()?['dietAssignedAt']?.toDate();
+          });
+        }
+      }
+    }
+  }
+
+  bool isDietVisible() {
+    if (dietAssignedAt == null) return false;
+    return DateTime.now().isBefore(dietAssignedAt!.add(Duration(hours: 24)));
+  }
+
   void _startChatWithDietician() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -77,7 +108,6 @@ class _PatientProfileState extends State<PatientProfile> {
       if (snapshot.docs.isNotEmpty) {
         final patientId = snapshot.docs.first.id;
 
-        // Navigate to PatientChatDiet instead of DieticianChatPatient
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -101,7 +131,6 @@ class _PatientProfileState extends State<PatientProfile> {
         final patientId = snapshot.docs.first.id;
         final patientName = snapshot.docs.first['name'];
 
-        // Navigate to PatientChatTrainer
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -149,6 +178,36 @@ class _PatientProfileState extends State<PatientProfile> {
                     style: const TextStyle(fontSize: 24),
                   ),
           ),
+          if (isDietVisible() && assignedDiet != null) ...[
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Your Assigned Diet:',
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                          'Breakfast: ${assignedDiet!['breakfast'].join(', ')}'),
+                      Text('Lunch: ${assignedDiet!['lunch'].join(', ')}'),
+                      Text('Dinner: ${assignedDiet!['dinner'].join(', ')}'),
+                      Text('Snacks: ${assignedDiet!['snacks'].join(', ')}'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -204,7 +263,7 @@ class _PatientProfileState extends State<PatientProfile> {
                   const Text("Chat with your Trainer"),
                   const SizedBox(width: 8),
                   FloatingActionButton(
-                    onPressed: _startChatWithTrainer, // Start chat with trainer
+                    onPressed: _startChatWithTrainer,
                     backgroundColor: Colors.blue,
                     child: const Icon(Icons.chat),
                   ),
