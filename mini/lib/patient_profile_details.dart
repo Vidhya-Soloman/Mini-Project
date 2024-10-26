@@ -74,25 +74,33 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
 
   Future<void> updatePatientDetails() async {
     if (_formKey.currentState!.validate()) {
+      // Calculate BMI
+      double weight =
+          double.tryParse(weightController.text) ?? patientData!['weight'];
+      double height =
+          double.tryParse(heightController.text) ?? patientData!['height'];
+      double bmi = calculateBMI(weight, height) ?? 0;
+
+      // Update patient details including BMI
       await FirebaseFirestore.instance.collection('patients').doc(userId).set({
         'age': int.tryParse(ageController.text) ?? patientData!['age'],
-        'weight':
-            double.tryParse(weightController.text) ?? patientData!['weight'],
-        'height':
-            double.tryParse(heightController.text) ?? patientData!['height'],
+        'weight': weight,
+        'height': height,
         'medicalCondition': medicalConditionController.text.isNotEmpty
             ? medicalConditionController.text
             : patientData!['medicalCondition'],
-      }, SetOptions(merge: true));
+        'bmi': bmi, // Store the calculated BMI
+      }, SetOptions(merge: true)); // Use merge to update existing fields
 
       setState(() {
         patientData!['age'] = int.tryParse(ageController.text);
-        patientData!['weight'] = double.tryParse(weightController.text);
-        patientData!['height'] = double.tryParse(heightController.text);
+        patientData!['weight'] = weight;
+        patientData!['height'] = height;
         patientData!['medicalCondition'] =
             medicalConditionController.text.isNotEmpty
                 ? medicalConditionController.text
                 : patientData!['medicalCondition'];
+        patientData!['bmi'] = bmi; // Update the BMI in local state
         isEditing = false;
       });
     }
@@ -310,6 +318,7 @@ class _PatientProfileDetailsState extends State<PatientProfileDetails> {
   }
 
   double? calculateBMI(double weight, double height) {
+    if (height == 0) return null; // Avoid division by zero
     return weight / ((height / 100) * (height / 100));
   }
 

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'login.dart';
+//import 'login.dart';
 import 'patient_profile_details.dart';
 import 'patient_chat_diet.dart';
 import 'patient_chat_trainer.dart';
@@ -56,9 +56,8 @@ class _PatientProfileState extends State<PatientProfile> {
   Future<void> _fetchUnreadMessagesCount(String patientId) async {
     final snapshot = await FirebaseFirestore.instance
         .collection('chats')
-        .doc(patientId)
-        .collection('messages')
-        .where('isRead', isEqualTo: false) // Count unread messages
+        .where('patientId', isEqualTo: patientId) // Count unread messages
+        .where('isRead', isEqualTo: false)
         .get();
 
     setState(() {
@@ -83,6 +82,35 @@ class _PatientProfileState extends State<PatientProfile> {
           context,
           MaterialPageRoute(
             builder: (context) => PatientChatDiet(patientId: patientId),
+          ),
+        );
+      }
+    }
+  }
+
+  void _startChatWithTrainer() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final email = user.email;
+      final snapshot = await FirebaseFirestore.instance
+          .collection('patients')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final patientId = snapshot.docs.first.id;
+        final patientName = snapshot.docs.first['name'];
+
+        // Navigate to PatientChatTrainer
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PatientChatTrainer(
+              patientId: patientId,
+              patientName: patientName,
+              trainerName:
+                  "Your Trainer Name", // Replace with actual trainer's name
+            ),
           ),
         );
       }
@@ -147,18 +175,17 @@ class _PatientProfileState extends State<PatientProfile> {
                         backgroundColor: Colors.green,
                         child: const Icon(Icons.chat),
                       ),
-                      if (unreadMessagesCount >
-                          0) // Show badge if there are unread messages
+                      if (unreadMessagesCount > 0)
                         Positioned(
                           right: 0,
                           child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
+                              color: Colors.red,
                             ),
                             child: Text(
-                              unreadMessagesCount.toString(),
+                              '$unreadMessagesCount',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
@@ -177,14 +204,7 @@ class _PatientProfileState extends State<PatientProfile> {
                   const Text("Chat with your Trainer"),
                   const SizedBox(width: 8),
                   FloatingActionButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PatientChatTrainer(),
-                        ),
-                      );
-                    },
+                    onPressed: _startChatWithTrainer, // Start chat with trainer
                     backgroundColor: Colors.blue,
                     child: const Icon(Icons.chat),
                   ),
@@ -193,16 +213,6 @@ class _PatientProfileState extends State<PatientProfile> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Future<void> logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const LoginPage(),
       ),
     );
   }

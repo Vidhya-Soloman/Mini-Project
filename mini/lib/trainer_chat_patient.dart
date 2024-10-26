@@ -2,12 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Import intl package for date formatting
 
-class PatientChatTrainer extends StatefulWidget {
-  final String patientId; // The ID of the patient
-  final String patientName; // The name of the patient
-  final String trainerName; // The name of the trainer
+class TrainerChatPatient extends StatefulWidget {
+  final String patientId; // ID of the patient
+  final String patientName; // Name of the patient
+  final String trainerName; // Name of the trainer
 
-  const PatientChatTrainer({
+  const TrainerChatPatient({
     required this.patientId,
     required this.patientName,
     required this.trainerName,
@@ -15,10 +15,10 @@ class PatientChatTrainer extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _PatientChatTrainerState createState() => _PatientChatTrainerState();
+  _TrainerChatPatientState createState() => _TrainerChatPatientState();
 }
 
-class _PatientChatTrainerState extends State<PatientChatTrainer> {
+class _TrainerChatPatientState extends State<TrainerChatPatient> {
   final TextEditingController _messageController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -26,18 +26,30 @@ class _PatientChatTrainerState extends State<PatientChatTrainer> {
     final message = _messageController.text.trim();
 
     if (message.isNotEmpty) {
-      // Send message to the 'messages' sub-collection inside the 'trainerchat' collection
+      // Create a message object
+      final messageData = {
+        'trainerName': widget.trainerName,
+        'patientName': widget.patientName,
+        'text': message, // Change 'message' to 'text'
+        'timestamp': FieldValue.serverTimestamp(),
+        'sender': 'trainer', // Indicates the sender as trainer
+        'patientId': widget.patientId, // Store patient ID for reference
+      };
+
+      // Sending message to Firestore in a sub-collection
       _firestore
           .collection('trainerchat')
           .doc(widget.patientId) // Document for this specific patient
           .collection('messages') // Sub-collection for messages
-          .add({
-        'trainerName': widget.trainerName,
-        'patientName': widget.patientName,
-        'text': message, // Use 'text' instead of 'message'
-        'timestamp': FieldValue.serverTimestamp(), // Current timestamp
-        'sender': 'patient', // Indicates the sender as patient
+          .add(messageData)
+          .then((_) {
+        // Optionally log success
+        print("Message sent: $message");
+      }).catchError((error) {
+        // Handle error in sending message
+        print("Error sending message: $error");
       });
+
       _messageController.clear(); // Clear input field after sending
     }
   }
@@ -90,7 +102,7 @@ class _PatientChatTrainerState extends State<PatientChatTrainer> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Chat with Trainer"), // Chat title
+        title: Text("Chat with ${widget.patientName}"), // Title of the chat
         actions: [
           IconButton(
             icon: const Icon(Icons.delete), // Delete icon
@@ -119,24 +131,22 @@ class _PatientChatTrainerState extends State<PatientChatTrainer> {
                   return const Center(child: Text("No messages yet."));
                 }
 
-                final messages = snapshot.data!.docs; // Retrieve the messages
+                final messagesFromFirestore =
+                    snapshot.data!.docs; // Retrieve the messages
 
                 return ListView.builder(
-                  itemCount: messages.length,
+                  itemCount: messagesFromFirestore.length,
                   itemBuilder: (context, index) {
-                    final messageData =
-                        messages[index].data() as Map<String, dynamic>;
+                    final messageData = messagesFromFirestore[index].data()
+                        as Map<String, dynamic>;
                     final messageText = messageData['text'] ??
                         ''; // Use 'text' instead of 'message'
-                    final sender =
-                        messageData['sender']; // Get sender information
+                    final isTrainer = messageData['sender'] ==
+                        'trainer'; // Check if sender is trainer
                     final timestamp = messageData['timestamp']; // Get timestamp
 
-                    final isPatient = sender ==
-                        'patient'; // Check if the sender is the patient
-
                     return Align(
-                      alignment: isPatient
+                      alignment: isTrainer
                           ? Alignment.centerRight
                           : Alignment.centerLeft, // Align based on sender
                       child: Container(
@@ -144,25 +154,24 @@ class _PatientChatTrainerState extends State<PatientChatTrainer> {
                         margin: const EdgeInsets.symmetric(
                             vertical: 4, horizontal: 8),
                         decoration: BoxDecoration(
-                          color: isPatient
-                              ? Colors.green[100]
-                              : Colors.blue[
-                                  100], // Different colors for patient and trainer
+                          color: isTrainer
+                              ? Colors.blue[100]
+                              : Colors
+                                  .green[100], // Different colors for sender
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
-                          crossAxisAlignment: isPatient
+                          crossAxisAlignment: isTrainer
                               ? CrossAxisAlignment.end
                               : CrossAxisAlignment.start,
                           children: [
                             Text(
                               messageText,
                               style: const TextStyle(
-                                  fontSize: 16), // Display the message
-                            ),
-                            if (timestamp != null &&
-                                timestamp
-                                    is Timestamp) // Check if timestamp is not null and is of Timestamp type
+                                  fontSize: 16), // Make the text legible
+                            ), // Display the message
+                            if (timestamp !=
+                                null) // Check if timestamp is not null
                               Text(
                                 _formatTimestamp(
                                     timestamp), // Format and display the timestamp

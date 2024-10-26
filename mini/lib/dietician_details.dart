@@ -14,15 +14,12 @@ class DieticianDetails extends StatefulWidget {
 
 class _DieticianDetailsState extends State<DieticianDetails> {
   Map<String, dynamic>? dieticianDetails; // Variable to store dietician details
-  List<Map<String, dynamic>> patients = []; // List to store patient data
-  List<bool> checkedPatients = []; // List to track checkbox states
   bool isLoading = true; // Loading state
 
   @override
   void initState() {
     super.initState();
     _fetchDieticianDetails(); // Fetch the dietician's details on init
-    _fetchPatientData(); // Fetch the patient data on init
   }
 
   Future<void> _fetchDieticianDetails() async {
@@ -45,30 +42,6 @@ class _DieticianDetailsState extends State<DieticianDetails> {
     setState(() {
       isLoading = false; // Update loading state
     });
-  }
-
-  Future<void> _fetchPatientData() async {
-    try {
-      var patientSnapshot =
-          await FirebaseFirestore.instance.collection('patients').get();
-
-      setState(() {
-        patients = patientSnapshot.docs.map((doc) {
-          return {
-            'id': doc.id,
-            'name': doc['name'], // Assuming there's a 'name' field
-            'bmi': doc['bmi'], // Assuming there's a 'bmi' field
-            'medicalCondition': doc[
-                'medicalCondition'], // Assuming there's a 'medicalCondition' field
-          };
-        }).toList();
-
-        // Initialize the checkbox state for each patient
-        checkedPatients = List<bool>.filled(patients.length, false);
-      });
-    } catch (e) {
-      print('Error fetching patient data: $e');
-    }
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -127,32 +100,76 @@ class _DieticianDetailsState extends State<DieticianDetails> {
                   ),
                   const SizedBox(height: 10), // Add some spacing
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: patients.length,
-                      itemBuilder: (context, index) {
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 5),
-                          child: ListTile(
-                            title: Text(patients[index]['name']),
-                            subtitle: Text(
-                              'BMI: ${patients[index]['bmi']}\nMedical Condition: ${patients[index]['medicalCondition']}',
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.chat), // Chat icon
-                              onPressed: () {
-                                // Navigate to chat page for the selected patient
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => DieticianChatPatient(
-                                      patientId: patients[index][
-                                          'id'], // Pass the selected patient's ID
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('patients')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child:
+                                  CircularProgressIndicator()); // Show loading indicator while waiting
+                        }
+                        if (snapshot.hasError) {
+                          return Center(
+                              child: Text(
+                                  'Error: ${snapshot.error}')); // Display error
+                        }
+
+                        // If data exists
+                        final patients = snapshot.data!.docs.map((doc) {
+                          return {
+                            'id': doc.id,
+                            'name':
+                                doc['name'], // Assuming there's a 'name' field
+                            'medicalCondition': doc[
+                                'medicalCondition'], // Assuming there's a 'medicalCondition' field
+                            'age': doc['age'], // Fetching the 'age' field
+                            'bmi': doc['bmi'], // Fetching the 'bmi' field
+                            'gender':
+                                doc['gender'], // Fetching the 'gender' field
+                          };
+                        }).toList();
+
+                        return ListView.builder(
+                          itemCount: patients.length,
+                          itemBuilder: (context, index) {
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 5),
+                              child: ListTile(
+                                title: Text(patients[index]['name']),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                        'Medical Condition: ${patients[index]['medicalCondition']}'),
+                                    Text('Age: ${patients[index]['age']}'),
+                                    Text(
+                                        'BMI: ${patients[index]['bmi']?.toStringAsFixed(2) ?? 'N/A'}'),
+                                    Text(
+                                        'Gender: ${patients[index]['gender'] ?? 'N/A'}'),
+                                  ],
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.chat), // Chat icon
+                                  onPressed: () {
+                                    // Navigate to chat page for the selected patient
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            DieticianChatPatient(
+                                          patientId: patients[index][
+                                              'id'], // Pass the selected patient's ID
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),

@@ -14,11 +14,27 @@ class DieticianChatPatient extends StatefulWidget {
 class _DieticianChatPatientState extends State<DieticianChatPatient> {
   final TextEditingController _messageController = TextEditingController();
   List<Map<String, dynamic>> messages = [];
+  String? patientName; // Variable to store patient's name
 
   @override
   void initState() {
     super.initState();
     _fetchMessages();
+    _fetchPatientName(); // Fetch patient name on init
+  }
+
+  Future<void> _fetchPatientName() async {
+    // Get the patient's name from Firestore
+    final patientSnapshot = await FirebaseFirestore.instance
+        .collection('patients')
+        .doc(widget.patientId)
+        .get();
+
+    if (patientSnapshot.exists) {
+      setState(() {
+        patientName = patientSnapshot.data()?['name'] ?? 'Patient';
+      });
+    }
   }
 
   Future<void> _fetchMessages() async {
@@ -107,7 +123,7 @@ class _DieticianChatPatientState extends State<DieticianChatPatient> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Chat with Patient"),
+        title: Text("Chat with ${patientName ?? 'Patient'}"),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
