@@ -45,6 +45,13 @@ class _PatientProfileState extends State<PatientProfile> {
         _fetchUnreadMessagesCount(patientId);
         _fetchAssignedDiet(patientId);
         _fetchAssignedWorkouts(patientId);
+
+        // Check if dietAssignedAt is older than 24 hours
+        if (dietAssignedAt != null &&
+            DateTime.now()
+                .isAfter(dietAssignedAt!.add(const Duration(hours: 24)))) {
+          _updateDietAssignmentStatus(patientId);
+        }
       } else {
         setState(() {
           userName = "User not found";
@@ -115,6 +122,14 @@ class _PatientProfileState extends State<PatientProfile> {
         workoutsAssignedAt = assignedWorkouts!.first['assignedAt'];
       });
     }
+  }
+
+  Future<void> _updateDietAssignmentStatus(String patientId) async {
+    final patientDoc =
+        FirebaseFirestore.instance.collection('patients').doc(patientId);
+
+    // Update the dietAssigned field to false if 24 hours have passed
+    await patientDoc.update({'dietAssigned': false});
   }
 
   bool isVisible(DateTime? assignedAt) {
@@ -203,7 +218,9 @@ class _PatientProfileState extends State<PatientProfile> {
                     style: const TextStyle(fontSize: 24),
                   ),
           ),
-          if (isVisible(dietAssignedAt) && assignedDiet != null) ...[
+          if (isVisible(dietAssignedAt) &&
+              assignedDiet != null &&
+              assignedDiet!['dietAssigned'] != false) ...[
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Card(

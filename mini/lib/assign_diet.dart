@@ -21,6 +21,7 @@ class _AssignDietState extends State<AssignDiet> {
   List<String> selectedLunchIngredients = [];
   List<String> selectedDinnerIngredients = [];
   List<String> selectedSnackIngredients = [];
+
   final Map<String, List<String>> mealIngredients = {
     'Breakfast': ['Oatmeal', 'Egg', 'Fruits', 'Yogurt', 'Nuts'],
     'Lunch': ['Chicken', 'Rice', 'Vegetables', 'Quinoa', 'Legumes'],
@@ -41,9 +42,10 @@ class _AssignDietState extends State<AssignDiet> {
   @override
   void initState() {
     super.initState();
-    _fetchDietStatus();
+    _fetchDietStatus(); // Fetch diet status on initialization
   }
 
+  // Fetch the diet status and other patient details from Firestore
   Future<void> _fetchDietStatus() async {
     try {
       final patientSnapshot = await FirebaseFirestore.instance
@@ -52,9 +54,18 @@ class _AssignDietState extends State<AssignDiet> {
           .get();
 
       if (patientSnapshot.exists) {
+        final dietAssigned = patientSnapshot.data()?['dietAssigned'] ?? false;
+
+        // Update the dietStatus based on the dietAssigned field
+        setState(() {
+          dietStatus = dietAssigned ? 'Assigned' : 'Not Assigned';
+        });
+
+        // Fetch the patient name as well
+        patientName = patientSnapshot.data()?['name'] ?? '';
+
+        // If there is a reference to a diet document, fetch its details
         final dietRef = patientSnapshot.data()?['dietRef'];
-        patientName =
-            patientSnapshot.data()?['name'] ?? ''; // Fetch the patient's name
         if (dietRef != null) {
           final dietSnapshot = await FirebaseFirestore.instance
               .collection('food')
@@ -62,27 +73,23 @@ class _AssignDietState extends State<AssignDiet> {
               .get();
 
           if (dietSnapshot.exists) {
+            // Optionally, you can also fetch and display the status of the diet from the 'food' collection
             setState(() {
-              dietStatus = dietSnapshot.data()?['status'] ?? 'Not Assigned';
+              dietStatus = dietSnapshot.data()?['status'] ?? dietStatus;
             });
           }
         }
       }
     } catch (e) {
-      // Handle errors
+      // Handle any errors that might occur while fetching data
       print('Error fetching diet status: $e');
     }
   }
 
+  // Function to submit the diet assignment
   Future<void> _submitDiet() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-
-      // Fetch the patient's email from the users collection
-      final userSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.patientId) // Assuming patientId corresponds to user ID
-          .get();
 
       // Prepare diet data to be saved in food collection
       final dietData = {
@@ -132,6 +139,7 @@ class _AssignDietState extends State<AssignDiet> {
     }
   }
 
+  // Function to handle adding a new ingredient
   void _addIngredient(String mealType) {
     final ingredient = _controllers[mealType]!.text.trim();
     if (ingredient.isNotEmpty &&
@@ -143,56 +151,7 @@ class _AssignDietState extends State<AssignDiet> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Assign Diet'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Display diet status at the top
-              Row(
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color:
-                        dietStatus == 'Assigned' ? Colors.green : Colors.grey,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Diet Status: $dietStatus',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20), // Add space below the status
-
-              ...mealIngredients.keys.map((mealType) {
-                return _buildMealSelection(
-                    mealType, mealIngredients[mealType]!);
-              }),
-
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _submitDiet,
-                child: const Text('Assign Diet'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
+  // Build the meal selection UI
   Widget _buildMealSelection(String mealType, List<String> ingredients) {
     List<String> selectedIngredients;
     switch (mealType) {
@@ -256,6 +215,56 @@ class _AssignDietState extends State<AssignDiet> {
         ),
         const SizedBox(height: 20),
       ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Assign Diet'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Display diet status at the top
+              Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color:
+                        dietStatus == 'Assigned' ? Colors.green : Colors.grey,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Diet Status: $dietStatus',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20), // Add space below the status
+
+              ...mealIngredients.keys.map((mealType) {
+                return _buildMealSelection(
+                    mealType, mealIngredients[mealType]!);
+              }),
+
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _submitDiet,
+                child: const Text('Assign Diet'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -39,6 +39,13 @@ class _AssignWorkoutState extends State<AssignWorkout> {
     'Cardio': ['Jumping Jacks', 'Burpees', 'High Knees', 'Jump Rope'],
   };
 
+  final Map<String, TextEditingController> _controllers = {
+    'Upper Body': TextEditingController(),
+    'Lower Body': TextEditingController(),
+    'Core': TextEditingController(),
+    'Cardio': TextEditingController(),
+  };
+
   String patientName = ''; // To hold the patient's name
   String patientEmail = ''; // To hold the patient's email
   String workoutStatus = 'Not Assigned'; // Initial status
@@ -48,9 +55,10 @@ class _AssignWorkoutState extends State<AssignWorkout> {
   void initState() {
     super.initState();
     _fetchPatientNameAndEmail();
-    _fetchWorkoutStatus(); // Fetch existing workout status
+    _fetchWorkoutStatus(); // Fetch existing workout status from patients collection
   }
 
+  // Fetch patient details from Firestore
   Future<void> _fetchPatientNameAndEmail() async {
     try {
       final patientSnapshot = await FirebaseFirestore.instance
@@ -71,33 +79,31 @@ class _AssignWorkoutState extends State<AssignWorkout> {
     }
   }
 
+  // Fetch workout status from the patient's collection
   Future<void> _fetchWorkoutStatus() async {
     try {
-      final workoutSnapshot = await FirebaseFirestore.instance
-          .collection('workouts')
-          .where('patientId', isEqualTo: widget.patientId)
-          .orderBy('assignedAt', descending: true)
-          .limit(1)
+      final patientSnapshot = await FirebaseFirestore.instance
+          .collection('patients')
+          .doc(widget.patientId)
           .get();
 
-      if (workoutSnapshot.docs.isNotEmpty) {
-        final latestWorkout = workoutSnapshot.docs.first.data();
-        workoutDocumentId =
-            workoutSnapshot.docs.first.id; // Store the document ID
+      if (patientSnapshot.exists) {
+        final workoutAssigned =
+            patientSnapshot.data()?['workoutAssigned'] ?? false;
 
-        // Check the latest status
+        // Update workoutStatus based on workoutAssigned field from the patient
         setState(() {
-          workoutStatus = latestWorkout['status'] ??
-              'Not Assigned'; // Update status from Firestore
+          workoutStatus = workoutAssigned ? 'Assigned' : 'Not Assigned';
         });
 
-        print('Latest workout status: $workoutStatus'); // Debugging
+        print('Workout status fetched: $workoutStatus'); // Debugging
       }
     } catch (e) {
       print('Error fetching workout status: $e');
     }
   }
 
+  // Function to submit workout data to Firestore
   Future<void> _submitWorkout() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
@@ -137,6 +143,16 @@ class _AssignWorkoutState extends State<AssignWorkout> {
         // Log the workout data to check if it's saved correctly
         print('Workout data saved: $workoutData');
 
+        // Update patient document with workout assignment
+        await FirebaseFirestore.instance
+            .collection('patients')
+            .doc(widget.patientId)
+            .update({
+          'workoutAssigned': true, // Set workoutAssigned to true
+          'workoutAssignedAt':
+              Timestamp.now(), // Set the workoutAssignedAt timestamp
+        });
+
         // Notify the parent widget that the workouts have been assigned
         widget.onWorkoutAssigned();
 
@@ -144,6 +160,10 @@ class _AssignWorkoutState extends State<AssignWorkout> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Workouts assigned successfully!')),
         );
+
+        // Reset workoutAssigned flag after 24 hours
+        _resetWorkoutAssignedAfter24Hours();
+
         Navigator.pop(context); // Go back to the previous screen
       } catch (error) {
         // Handle errors
@@ -152,6 +172,37 @@ class _AssignWorkoutState extends State<AssignWorkout> {
           SnackBar(content: Text('Error: $error')),
         );
       }
+    }
+  }
+
+  // Function to reset workoutAssigned flag after 24 hours
+  void _resetWorkoutAssignedAfter24Hours() {
+    Future.delayed(Duration(hours: 24), () async {
+      try {
+        await FirebaseFirestore.instance
+            .collection('patients')
+            .doc(widget.patientId)
+            .update({
+          'workoutAssigned':
+              false, // Reset the workoutAssigned flag after 24 hours
+          'workoutAssignedAt': null, // Set the workoutAssignedAt to null
+        });
+
+        print('Workout assignment reset after 24 hours.');
+      } catch (e) {
+        print('Error resetting workout assignment: $e');
+      }
+    });
+  }
+
+  // Function to handle adding a custom workout to a category
+  void _addCustomWorkout(String workoutType) {
+    final newWorkout = _controllers[workoutType]!.text.trim();
+    if (newWorkout.isNotEmpty) {
+      setState(() {
+        workoutOptions[workoutType]!.add(newWorkout);
+        _controllers[workoutType]!.clear(); // Clear the input field
+      });
     }
   }
 
@@ -197,6 +248,24 @@ class _AssignWorkoutState extends State<AssignWorkout> {
               },
             );
           }).toList(),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controllers[workoutType],
+                decoration: InputDecoration(
+                  labelText: 'Add new workout',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _addCustomWorkout(workoutType),
+            ),
+          ],
         ),
         const SizedBox(height: 20),
       ],
